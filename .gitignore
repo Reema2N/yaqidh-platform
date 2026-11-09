@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# Secrets & local config
+.env
+
+# Local databases
+db.sqlite3
+
+# Generated / runtime files
+staticfiles/
+media/
+apps/static/live_frames/*
+!apps/static/live_frames/.gitkeep
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

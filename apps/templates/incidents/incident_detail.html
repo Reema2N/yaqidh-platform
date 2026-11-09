@@ -1,0 +1,119 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Incident Details{% endblock %}
+
+{% block content %}
+<div class="content-page active">
+    <div class="page-header">
+        <div>
+            <h1>Incident Details</h1>
+            <p>Review incident information and evidence</p>
+        </div>
+
+        <a href="{% url 'incidents:index' %}" class="btn-primary" style="text-decoration:none;">
+            <i class="fas fa-arrow-left"></i> Back to Incidents
+        </a>
+    </div>
+
+    <div class="card" style="max-width: 1000px; margin: 0 auto;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:24px;">
+
+            <div>
+                <h3 style="margin-bottom:14px;">Basic Information</h3>
+
+                <p><strong>ID:</strong> #{{ incident.id }}</p>
+                <p><strong>Camera ID:</strong> {{ incident.camera_id|default:"N/A" }}</p>
+                <p><strong>Location:</strong> {{ incident.location|default:"Unknown Location" }}</p>
+
+                <p>
+                    <strong>Severity:</strong>
+                    {% if incident.severity|lower == "high" %}
+                        <span style="color:#ef4444; font-weight:bold;">High</span>
+                    {% elif incident.severity|lower == "medium" %}
+                        <span style="color:#facc15; font-weight:bold;">Medium</span>
+                    {% else %}
+                        <span style="color:#3b82f6; font-weight:bold;">Low</span>
+                    {% endif %}
+                </p>
+
+                <p style="margin-top:10px;">
+                    <strong>Status:</strong>
+                    {% if incident.status|lower == "active" %}
+                        <span style="color:#ef4444; font-weight:bold;">Active</span>
+                    {% elif incident.status|lower == "under review" %}
+                        <span style="color:#facc15; font-weight:bold;">Under Review</span>
+                    {% else %}
+                        <span style="color:#22c55e; font-weight:bold;">Resolved</span>
+                    {% endif %}
+                </p>
+
+                {% if incident.status|lower == "under review" %}
+                <form method="post" action="{% url 'incidents:resolve_incident' incident.id %}" style="margin-top:15px;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary" style="background:#22c55e; color: #fff; padding:8px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+                        <i class="fas fa-check"></i> Mark as Resolved
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            <div>
+                <h3 style="margin-bottom:14px;">Time & Confidence</h3>
+
+                <p>
+                    <strong>Time:</strong>
+                    {{ incident.timestamp|date:"h:i:s A" }}
+                </p>
+
+                <p>
+                    <strong>Date:</strong>
+                    {{ incident.timestamp|date:"l, F j, Y" }}
+                </p>
+
+                <p><strong>Confidence:</strong></p>
+
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="flex:1; background:#1f2937; border-radius:9999px; height:10px; overflow:hidden;">
+                        {% if incident.severity|lower == "high" %}
+                            <div style="width:{{ incident.confidence_percent }}%; background:#ef4444; height:100%;"></div>
+                        {% elif incident.severity|lower == "medium" %}
+                            <div style="width:{{ incident.confidence_percent }}%; background:#facc15; height:100%;"></div>
+                        {% else %}
+                            <div style="width:{{ incident.confidence_percent }}%; background:#3b82f6; height:100%;"></div>
+                        {% endif %}
+                    </div>
+                    <span style="font-weight:bold;">{{ incident.confidence_percent }}%</span>
+                </div>
+            </div>
+
+        </div>
+
+        <hr style="margin:24px 0; border-top:1px solid #1e293b;">
+
+        <div style="margin-bottom:24px;">
+            <h3>Description</h3>
+            <p style="color:#cbd5e1;">{{ incident.auto_description }}</p>
+        </div>
+
+        <div>
+            <h3>Evidence</h3>
+
+            {% if incident.evidence %}
+                {% if ".mp4" in incident.evidence|lower or ".webm" in incident.evidence|lower or ".ogg" in incident.evidence|lower %}
+                    <video controls style="width:100%; max-height:520px; border-radius:12px; background:#000;">
+                        <source src="/media/{{ incident.evidence }}" type="video/mp4">
+                    </video>
+                {% elif ".gif" in incident.evidence|lower or ".jpg" in incident.evidence|lower or ".jpeg" in incident.evidence|lower or ".png" in incident.evidence|lower %}
+                    <img src="/media/{{ incident.evidence }}" alt="Incident Evidence"
+                         style="width:100%; max-height:520px; object-fit:contain; border-radius:12px; background:#000;">
+                {% else %}
+                    <p>Unsupported evidence format.</p>
+                    <p style="color:#94a3b8;">{{ incident.evidence }}</p>
+                {% endif %}
+            {% else %}
+                <p>No evidence available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

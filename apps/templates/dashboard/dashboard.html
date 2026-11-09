@@ -1,0 +1,407 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div id="dashboard-page" class="content-page active">
+
+    <div class="page-header">
+        <div>
+            <h1>Dashboard</h1>
+            <p>Real-time monitoring overview</p>
+        </div>
+
+        <div class="current-time">
+            <i class="fas fa-clock"></i>
+            <div>
+                <div id="current-time" class="time"></div>
+                <div id="current-date" class="date"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-content">
+                <div>
+                    <p class="stat-label">Active Cameras</p>
+                    <p class="stat-value" id="active_cameras">{{ active_cameras }}</p>
+                    <p class="stat-change">System Streams</p>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="fas fa-camera"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-content">
+                <div>
+                    <p class="stat-label">Total Incidents Today</p>
+                    <p class="stat-value" id="incidents_today">{{ incidents_today }}</p>
+                    <p class="stat-change">Real-time update</p>
+                </div>
+                <div class="stat-icon red">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-content">
+                <div>
+                    <p class="stat-label">System Status</p>
+                    <p class="stat-value" id="system_status">{{ system_status }}</p>
+                    <p class="stat-change"><span id="dashboard_uptime">{{ uptime }}</span>% System Availability</p>
+                </div>
+                <div id="system_status_icon" class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-content">
+                <div>
+                    <p class="stat-label">Resolution Rate</p>
+                    <p class="stat-value" id="resolution_rate">{{ resolution_rate }}%</p>
+                    <p class="stat-change">Incidents resolved</p>
+                </div>
+                <div class="stat-icon purple">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card camera-feeds">
+            <h2>Live Camera Feeds</h2>
+            <div id="cameras-live-container" class="live-cameras-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem;">
+                {% for cam in cameras %}
+                <div class="live-camera-card">
+                    <div class="camera-video">
+                        {% if cam.status == "active" %}
+                            <div class="feed-placeholder" style="height: 100%; position: relative;">
+                                <img
+                                    src="/static/live_frames/cam1.jpg"
+                                    class="live-feed-img"
+                                    id="dashboard-live-feed-{{ forloop.counter }}"
+                                    style="width: 100%; height: 100%; object-fit: cover;"
+                                >
+                                <div class="live-indicator">
+                                    <span id="camera-pulse-{{ forloop.counter }}" class="pulse"></span>
+                                    <span id="camera-live-text-{{ forloop.counter }}">LIVE</span>
+                                </div>
+                            </div>
+                            <div class="camera-status live">LIVE</div>
+                        {% elif cam.status == "maintenance" %}
+                            <div class="feed-placeholder">
+                                <i class="fas fa-tools" style="font-size: 32px; color: #eab308; margin-bottom: 8px;"></i>
+                                <p style="font-size: 13px; color: #eab308; font-weight: 600; margin: 0;">MAINTENANCE</p>
+                            </div>
+                            <div class="camera-status" style="background: #eab308; color: #000;">MAINT</div>
+                        {% else %}
+                            <div class="feed-placeholder">
+                                <i class="fas fa-camera" style="font-size: 32px; color: #475569; margin-bottom: 8px;"></i>
+                                <p style="font-size: 13px; color: #475569; margin: 0;">OFFLINE</p>
+                            </div>
+                            <div class="camera-status" style="background: #334155; color: #94a3b8;">OFFLINE</div>
+                        {% endif %}
+                    </div>
+                    <div class="camera-info" style="padding: 12px; background: #0f172a; border-top: 1px solid #1e293b;">
+                        <h3 style="font-size: 14px; font-weight: 700; color: #f1f5f9; margin-bottom: 2px;">{{ cam.location }}</h3>
+                        <p style="font-size: 12px; color: #64748b; margin: 0;">{{ cam.model|default:"System Feed" }} ({{ cam.camera_id }})</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: #64748b; padding: 1rem;">No cameras registered in system database.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card alerts-panel">
+            <div class="alerts-header">
+                <h2>Real-time Alerts</h2>
+                <span class="badge badge-red" id="active_alerts_count">{{ active_alerts_count }} Active</span>
+            </div>
+
+            <div id="alerts-container" class="alerts-list">
+                {% for alert in recent_incidents %}
+                <div class="alert-item">
+                    <div class="alert-header">
+                        <div class="alert-camera">
+                            <span class="status-dot {{ alert.severity }}"></span>
+                            <span style="color: #f1f5f9; font-weight: 600; font-size: 14px;">{{ alert.camera_name }}</span>
+                        </div>
+                        <span class="severity-badge severity-{{ alert.severity }}">{{ alert.severity_display }}</span>
+                    </div>
+                    
+                    <p class="alert-time" style="font-size: 12px; color: #94a3b8; margin: 4px 0;">{{ alert.time }}</p>
+                    
+                    <div class="confidence-bar" style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 8px;">
+                        <span style="color: #94a3b8;">Confidence:</span>
+                        <div class="confidence-progress" style="flex: 1; height: 6px; background: #1e293b; border-radius: 9999px; overflow: hidden; margin: 0 10px;">
+                            <div class="confidence-fill" style="width: {{ alert.confidence }}%; height: 100%; border-radius: 9999px; background: {% if alert.severity == 'high' %}#ef4444{% elif alert.severity == 'medium' %}#eab308{% else %}#3b82f6{% endif %};"></div>
+                        </div>
+                        <span style="color: #f1f5f9; font-weight: 600;">{{ alert.confidence }}%</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: #64748b; text-align: center; padding: 2rem; font-size: 14px;">No active alerts available</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Incident Summary - Last 24 Hours</h2>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <p class="summary-value red" id="high_count">{{ high_count }}</p>
+                <p class="summary-label">High Severity</p>
+            </div>
+            <div class="summary-item">
+                <p class="summary-value yellow" id="medium_count">{{ medium_count }}</p>
+                <p class="summary-label">Medium Severity</p>
+            </div>
+            <div class="summary-item">
+                <p class="summary-value blue" id="low_count">{{ low_count }}</p>
+                <p class="summary-label">Low Severity</p>
+            </div>
+            <div class="summary-item">
+                <p class="summary-value green" id="resolved_count">{{ resolved_count }}</p>
+                <p class="summary-label">Resolved</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="custom-alert-toast" style="position: fixed; bottom: 20px; right: 20px; background: #ff3333; color: white; padding: 15px 25px; border-radius: 8px; display: none; z-index: 9999; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: sans-serif; align-items: center; gap: 10px;">
+    <i class="fas fa-exclamation-circle" style="font-size: 20px;"></i>
+    <div>
+        <strong id="toast-title"></strong>
+        <div id="toast-body" style="font-size: 12px; opacity: 0.9;"></div>
+    </div>
+</div>
+
+<script>
+let seenAlertIds = []; 
+let currentCameraStates = {}; // حافظة لمراقبة التغير الحقيقي لحالات الكاميرات دون تذبذب شاشة الويبكام
+
+
+function updateTime() {
+    const now = new Date();
+    if(document.getElementById("current-time")) document.getElementById("current-time").innerText = now.toLocaleTimeString();
+    if(document.getElementById("current-date")) document.getElementById("current-date").innerText = now.toLocaleDateString();
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+async function fetchDashboardData() {
+    try {
+        const response = await fetch("/dashboard/api/live/?_cache=" + new Date().getTime());
+        if (response.status === 401) {
+            // Session expired: send the user back to the login page.
+            window.location.href = "/";
+            return;
+        }
+        if (!response.ok) throw new Error("Network response was not ok");
+        
+        const data = await response.json();
+
+        // تحديث العدادات الإحصائية الكبرى
+        if(document.getElementById("active_cameras")) document.getElementById("active_cameras").innerText = data.active_cameras;
+        if(document.getElementById("incidents_today")) document.getElementById("incidents_today").innerText = data.incidents_today;
+        if(document.getElementById("resolution_rate")) document.getElementById("resolution_rate").innerText = data.resolution_rate + "%";
+        
+        // 1. تحديث نص حالة النظام وتغيير لونه ديناميكياً
+        const statusEl = document.getElementById("system_status");
+        if(statusEl) {
+            statusEl.innerText = data.system_status;
+            statusEl.style.color =
+                data.system_status === "Operational" ? "#22c55e" : 
+                data.system_status === "Degraded" ? "#eab308" :    
+                data.system_status === "Offline" ? "#ef4444" :     
+                "#64748b";                                         
+        }
+
+        // 2. تحديث الأيقونة الذكية لحالة النظام
+        const statusIcon = document.getElementById("system_status_icon");
+        if (statusIcon) {
+            let iconClass = "fas fa-question-circle";
+            let colorClass = "blue";
+
+            if (data.system_status === "Operational") {
+                iconClass = "fas fa-check-circle";
+                colorClass = "green";
+            } else if (data.system_status === "Degraded") {
+                iconClass = "fas fa-exclamation-triangle";
+                colorClass = "yellow";
+            } else if (data.system_status === "Offline") {
+                iconClass = "fas fa-times-circle";
+                colorClass = "red";
+            } else if (data.system_status === "No Cameras") {
+                iconClass = "fas fa-video-slash";
+                colorClass = "gray";
+            }
+
+            statusIcon.className = `stat-icon ${colorClass}`;
+            statusIcon.innerHTML = `<i class="${iconClass}"></i>`;
+        }
+
+        // 3. تحديث النسبة المئوية للـ Uptime (Availability)
+        if(document.getElementById("dashboard_uptime")) document.getElementById("dashboard_uptime").innerText = data.uptime;
+        
+        if(document.getElementById("high_count")) document.getElementById("high_count").innerText = data.high_count;
+        if(document.getElementById("medium_count")) document.getElementById("medium_count").innerText = data.medium_count;
+        if(document.getElementById("low_count")) document.getElementById("low_count").innerText = data.low_count;
+        if(document.getElementById("resolved_count")) document.getElementById("resolved_count").innerText = data.resolved_count;
+        if(document.getElementById("active_alerts_count")) document.getElementById("active_alerts_count").innerText = data.active_alerts_count + " Active";
+
+        // 🔥 4. تحديث كروت الكاميرات بالأسفل تلقائياً بالكامل (LIVE / MAINT / OFFLINE) بدون ريفريش
+        const camerasContainer = document.getElementById("cameras-live-container");
+        if (camerasContainer && data.cameras_data) {
+            let stateChanged = false;
+            
+            data.cameras_data.forEach(c => {
+                if (currentCameraStates[c.camera_id] !== c.status) {
+                    stateChanged = true;
+                    currentCameraStates[c.camera_id] = c.status;
+                }
+            });
+
+            if (stateChanged) {
+                camerasContainer.innerHTML = "";
+                data.cameras_data.forEach((cam, i) => {
+                    let index = i + 1;
+                    let htmlContent = `<div class="live-camera-card"><div class="camera-video">`;
+                    
+                    if (cam.status === "active") {
+                        htmlContent += `
+                            <div class="feed-placeholder" style="height: 100%; position: relative;">
+                                <img
+                                    src="/static/live_frames/cam1.jpg"
+                                    class="live-feed-img"
+                                    id="dashboard-live-feed-${index}"
+                                    style="width: 100%; height: 100%; object-fit: cover;"
+                                >
+                                <div class="live-indicator">
+                                    <span id="camera-pulse-${index}" class="pulse"></span>
+                                    <span id="camera-live-text-${index}">LIVE</span>
+                                </div>
+                            </div>
+                            <div class="camera-status live">LIVE</div>`;
+                    } else if (cam.status === "maintenance") {
+                        htmlContent += `
+                            <div class="feed-placeholder">
+                                <i class="fas fa-tools" style="font-size: 32px; color: #eab308; margin-bottom: 8px;"></i>
+                                <p style="font-size: 13px; color: #eab308; font-weight: 600; margin: 0;">MAINTENANCE</p>
+                            </div>
+                            <div class="camera-status" style="background: #eab308; color: #000;">MAINT</div>`;
+                    } else {
+                        htmlContent += `
+                            <div class="feed-placeholder">
+                                <i class="fas fa-camera" style="font-size: 32px; color: #475569; margin-bottom: 8px;"></i>
+                                <p style="font-size: 13px; color: #475569; margin: 0;">OFFLINE</p>
+                            </div>
+                            <div class="camera-status" style="background: #334155; color: #94a3b8;">OFFLINE</div>`;
+                    }
+
+                    htmlContent += `</div><div class="camera-info" style="padding: 12px; background: #0f172a; border-top: 1px solid #1e293b;">
+                        <h3 style="font-size: 14px; font-weight: 700; color: #f1f5f9; margin-bottom: 2px;">${cam.location}</h3>
+                        <p style="font-size: 12px; color: #64748b; margin: 0;">${cam.model || 'System Feed'} (${cam.camera_id})</p>
+                    </div></div>`;
+                    
+                    camerasContainer.innerHTML += htmlContent;
+                });
+            }
+        }
+
+        // 5. التحديث اللحظي لقائمة التنبيهات الجانبية
+        const alertsContainer = document.getElementById("alerts-container");
+        if (alertsContainer && data.alerts_list) {
+            alertsContainer.innerHTML = ""; 
+            
+            data.alerts_list.forEach(alert => {
+                let colorHex = '#3b82f6'; 
+                if (alert.severity === 'high') colorHex = '#ef4444'; 
+                if (alert.severity === 'medium') colorHex = '#eab308'; 
+
+                alertsContainer.innerHTML += `
+                    <div class="alert-item">
+                        <div class="alert-header">
+                            <div class="alert-camera">
+                                <span class="status-dot ${alert.severity}"></span>
+                                <span style="color: #f1f5f9; font-weight: 600; font-size: 14px;">${alert.camera_name}</span>
+                            </div>
+                            <span class="severity-badge severity-${alert.severity}">${alert.severity_display}</span>
+                        </div>
+                        <p class="alert-time" style="font-size: 12px; color: #94a3b8; margin: 4px 0;">${alert.time}</p>
+                        <div class="confidence-bar" style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 8px;">
+                            <span style="color: #94a3b8;">Confidence:</span>
+                            <div class="confidence-progress" style="flex: 1; height: 6px; background: #1e293b; border-radius: 9999px; overflow: hidden; margin: 0 10px;">
+                                <div class="confidence-fill" style="width: ${alert.confidence}%; height: 100%; border-radius: 9999px; background: ${colorHex};"></div>
+                            </div>
+                            <span style="color: #f1f5f9; font-weight: 600;">${alert.confidence}%</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 6. الإشعارات الفورية الطائرة (Pop-up Toasts)
+        if (data.new_alerts && data.new_alerts.length > 0) {
+            data.new_alerts.forEach((alert, index) => {
+                if (!seenAlertIds.includes(alert.id)) {
+                    seenAlertIds.push(alert.id); 
+                    setTimeout(() => {
+                        showNotificationToast(alert);
+                    }, index * 1200); 
+                }
+            });
+        }
+
+    } catch (error) {
+        console.log("Dashboard fetch failed");
+    }
+}
+
+setInterval(fetchDashboardData, 5000);
+fetchDashboardData();
+
+function showNotificationToast(alertData) {
+    const toast = document.getElementById("custom-alert-toast");
+    if(!toast) return;
+    
+    document.getElementById("toast-title").innerText = alertData.title;
+    document.getElementById("toast-body").innerText = `Severity: ${alertData.level.toUpperCase()}`;
+    
+    if(alertData.level === 'high') {
+        toast.style.background = "#dc2626";
+        toast.style.color = "#fff";
+    } else if(alertData.level === 'medium') {
+        toast.style.background = "#eab308";
+        toast.style.color = "#000";
+    } else {
+        toast.style.background = "#2563eb";
+        toast.style.color = "#fff";
+    }
+
+    toast.style.display = "flex";
+    setTimeout(() => { toast.style.display = "none"; }, 5000);
+}
+function refreshDashboardFeeds() {
+
+    const feeds = document.querySelectorAll('.live-feed-img');
+
+    feeds.forEach((img) => {
+        img.src = "/static/live_frames/cam1.jpg?t=" + new Date().getTime();
+    });
+
+}
+
+setInterval(refreshDashboardFeeds, 400);
+</script>
+{% endblock %}

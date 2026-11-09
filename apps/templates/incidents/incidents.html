@@ -1,0 +1,276 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Incidents {% endblock %}
+
+{% block content %}
+<div id="incidents-page" class="content-page active">
+
+    <div class="page-header">
+        <div>
+            <h1>Incidents & Alerts</h1>
+            <p>View and manage all detected incidents</p>
+        </div>
+
+        <a
+            href="{% url 'incidents:export_csv' %}?search={{ search_query }}&severity={{ selected_severity }}&status={{ selected_status }}&sort_by={{ selected_sort }}&date_from={{ date_from }}&date_to={{ date_to }}&incident_day={{ selected_day }}"
+            class="btn-primary"
+            style="text-decoration:none;"
+        >
+            <i class="fas fa-download"></i> Export Report
+        </a>
+    </div>
+
+    <div class="card filters-bar">
+        <form method="get" class="filters-grid">
+
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search incidents..."
+                    value="{{ search_query }}"
+                >
+            </div>
+
+            <select name="severity" class="filter-select">
+                <option value="all" {% if selected_severity == 'all' %}selected{% endif %}>All Severities</option>
+                <option value="High" {% if selected_severity == 'High' %}selected{% endif %}>High</option>
+                <option value="Medium" {% if selected_severity == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Low" {% if selected_severity == 'Low' %}selected{% endif %}>Low</option>
+            </select>
+
+            <select name="status" class="filter-select">
+                <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Status</option>
+                <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
+                <option value="Under Review" {% if selected_status == 'Under Review' %}selected{% endif %}>Under Review</option>
+                <option value="Resolved" {% if selected_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+            </select>
+
+            <select name="incident_day" class="filter-select">
+                <option value="all" {% if selected_day == 'all' %}selected{% endif %}>All Days</option>
+                <option value="monday" {% if selected_day == 'monday' %}selected{% endif %}>Monday</option>
+                <option value="tuesday" {% if selected_day == 'tuesday' %}selected{% endif %}>Tuesday</option>
+                <option value="wednesday" {% if selected_day == 'wednesday' %}selected{% endif %}>Wednesday</option>
+                <option value="thursday" {% if selected_day == 'thursday' %}selected{% endif %}>Thursday</option>
+                <option value="friday" {% if selected_day == 'friday' %}selected{% endif %}>Friday</option>
+                <option value="saturday" {% if selected_day == 'saturday' %}selected{% endif %}>Saturday</option>
+                <option value="sunday" {% if selected_day == 'sunday' %}selected{% endif %}>Sunday</option>
+            </select>
+
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:12px; color:#94a3b8;">From Date</label>
+                <input
+                    type="date"
+                    name="date_from"
+                    value="{{ date_from }}"
+                    class="filter-select"
+                >
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:12px; color:#94a3b8;">To Date</label>
+                <input
+                    type="date"
+                    name="date_to"
+                    value="{{ date_to }}"
+                    class="filter-select"
+                >
+            </div>
+
+            <select name="sort_by" class="filter-select">
+                <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest First</option>
+                <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+                <option value="severity" {% if selected_sort == 'severity' %}selected{% endif %}>By Severity</option>
+            </select>
+
+            <button class="btn-primary" type="submit">Apply</button>
+        </form>
+
+        <div class="view-toggle">
+            <span>View:</span>
+            <button class="view-btn active" type="button" onclick="showIncidentsTable()">Table</button>
+            <button class="view-btn" type="button" onclick="showIncidentsCards()">Cards</button>
+        </div>
+    </div>
+
+    <div class="results-count">
+        <p>Showing {{ incidents_count }} of {{ incidents_count }} incidents</p>
+    </div>
+
+    <div id="incidents-table-view" class="card table-container" style="overflow-x:auto;">
+        <table class="data-table" style="width:100%; min-width:1100px; font-size:13px;">
+            <thead>
+                <tr>
+                    <th style="padding:10px; white-space:nowrap;">ID</th>
+                    <th style="padding:10px; white-space:nowrap;">Timestamp</th>
+                    <th style="padding:10px; white-space:nowrap;">Camera</th>
+                    <th style="padding:10px; white-space:nowrap;">Severity</th>
+                    <th style="padding:10px; white-space:nowrap;">Confidence</th>
+                    <th style="padding:10px; white-space:nowrap;">Status</th>
+                    <th style="padding:10px; white-space:nowrap;">Description</th>
+                    <th style="padding:10px; white-space:nowrap;">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for incident in incidents %}
+                <tr>
+                    <td style="padding:10px; white-space:nowrap;">#{{ incident.id }}</td>
+
+                    <td style="padding:10px; white-space:nowrap;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <i class="fas fa-clock" style="color:#60a5fa;"></i>
+                            <div>
+                                <div style="font-weight:bold;">
+                                    {{ incident.timestamp|date:"h:i:s A" }}
+                                </div>
+                                <div style="font-size:11px; color:#9ca3af;">
+                                    {{ incident.timestamp|date:"l, F j, Y" }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td style="padding:10px; white-space:nowrap;">
+                        <strong>{{ incident.location|default:"Unknown Location" }}</strong><br>
+                        <small>{{ incident.camera_id|default:"N/A" }}</small>
+                    </td>
+
+                    <td style="padding:10px; white-space:nowrap;">
+                        {% if incident.severity|lower == "high" %}
+                            <span style="color:#ef4444; font-weight:bold;">High</span>
+                        {% elif incident.severity|lower == "medium" %}
+                            <span style="color:#facc15; font-weight:bold;">Medium</span>
+                        {% else %}
+                            <span style="color:#3b82f6; font-weight:bold;">Low</span>
+                        {% endif %}
+                    </td>
+
+                    <td style="padding:10px; white-space:nowrap;">
+                        {% if incident.severity|lower == "high" %}
+                            <div style="width:70px; background:#1f2937; border-radius:10px; display:inline-block; margin-right:6px; vertical-align:middle;">
+                                <div style="width:{{ incident.confidence_percent }}%; background:#ef4444; height:6px; border-radius:10px;"></div>
+                            </div>
+                        {% elif incident.severity|lower == "medium" %}
+                            <div style="width:70px; background:#1f2937; border-radius:10px; display:inline-block; margin-right:6px; vertical-align:middle;">
+                                <div style="width:{{ incident.confidence_percent }}%; background:#facc15; height:6px; border-radius:10px;"></div>
+                            </div>
+                        {% else %}
+                            <div style="width:70px; background:#1f2937; border-radius:10px; display:inline-block; margin-right:6px; vertical-align:middle;">
+                                <div style="width:{{ incident.confidence_percent }}%; background:#3b82f6; height:6px; border-radius:10px;"></div>
+                            </div>
+                        {% endif %}
+                        {{ incident.confidence_percent }}%
+                    </td>
+
+                    <td style="padding:10px; white-space:nowrap;">
+                        {% if incident.status|lower == "active" %}
+                            <span style="color:#22c55e;">Active</span>
+                        {% elif incident.status|lower == "under review" %}
+                            <span style="color:#60a5fa;">Under Review</span>
+                        {% else %}
+                            <span style="color:#22c55e;">Resolved</span>
+                        {% endif %}
+                    </td>
+
+                    <td style="padding:10px; min-width:220px; white-space:normal;">
+                        {{ incident.auto_description }}
+                    </td>
+
+                    <td style="padding:10px; white-space:nowrap;">
+                        <a href="{% url 'incidents:detail' incident.id %}" class="btn-primary" style="text-decoration:none;">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center; padding:20px;">No incidents found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="incidents-cards-view" class="incidents-cards-grid" style="display:none;">
+        {% for incident in incidents %}
+        <div class="card" style="padding:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
+                <div>
+                    <h3 style="margin:0 0 6px 0;">Incident #{{ incident.id }}</h3>
+                    <p style="margin:0; color:#9ca3af;">{{ incident.location|default:"Unknown Location" }}</p>
+                    <small style="color:#9ca3af;">{{ incident.camera_id|default:"N/A" }}</small>
+                </div>
+
+                <div>
+                    {% if incident.severity|lower == "high" %}
+                        <span style="color:#ef4444; font-weight:bold;">High</span>
+                    {% elif incident.severity|lower == "medium" %}
+                        <span style="color:#facc15; font-weight:bold;">Medium</span>
+                    {% else %}
+                        <span style="color:#3b82f6; font-weight:bold;">Low</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <i class="fas fa-clock" style="color:#60a5fa;"></i>
+                <span style="margin-left:8px;">{{ incident.timestamp|date:"h:i:s A" }}</span>
+                <div style="font-size:12px; color:#9ca3af; margin-top:4px;">
+                    {{ incident.timestamp|date:"l, F j, Y" }}
+                </div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <strong>Status:</strong>
+                {% if incident.status|lower == "active" %}
+                    <span style="color:#22c55e;">Active</span>
+                {% elif incident.status|lower == "under review" %}
+                    <span style="color:#60a5fa;">Under Review</span>
+                {% else %}
+                    <span style="color:#22c55e;">Resolved</span>
+                {% endif %}
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <strong>Confidence:</strong> {{ incident.confidence_percent }}%
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <strong>Description:</strong>
+                <p style="margin:6px 0 0 0;">{{ incident.auto_description }}</p>
+            </div>
+
+            <div>
+                <a href="{% url 'incidents:detail' incident.id %}" class="btn-primary" style="text-decoration:none;">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <p>No incidents found</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function showIncidentsTable() {
+        document.getElementById('incidents-table-view').style.display = 'block';
+        document.getElementById('incidents-cards-view').style.display = 'none';
+
+        const buttons = document.querySelectorAll('.view-btn');
+        buttons[0].classList.add('active');
+        buttons[1].classList.remove('active');
+    }
+
+    function showIncidentsCards() {
+        document.getElementById('incidents-table-view').style.display = 'none';
+        document.getElementById('incidents-cards-view').style.display = 'grid';
+
+        const buttons = document.querySelectorAll('.view-btn');
+        buttons[0].classList.remove('active');
+        buttons[1].classList.add('active');
+    }
+</script>
+{% endblock %}

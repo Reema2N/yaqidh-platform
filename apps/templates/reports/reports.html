@@ -1,0 +1,211 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div id="reports-page" class="content-page active">
+
+    <div class="page-header">
+        <div>
+            <h1>Reports & Analytics</h1>
+            <p>Statistical analysis and incident trends</p>
+        </div>
+
+        <div class="header-controls">
+            <select class="control-select">
+                <option>Last 7 Days</option>
+                <option>Last 30 Days</option>
+                <option>Last 3 Months</option>
+                <option>Last Year</option>
+            </select>
+            <!--<button class="btn-primary">Generate Report</button>-->
+            <a href="{% url 'incidents:export_csv' %}" class="btn-primary" style="text-decoration:none;">
+                 Generate Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+
+        <!-- Total Incidents -->
+        <div class="stat-card">
+            <div class="stat-header">
+                <p class="stat-label">Total Incidents</p>
+                <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+            </div>
+            <p class="stat-value">{{ total_incidents }}</p>
+            <div class="stat-trend {% if weekly_change_value is not None and weekly_change_value > 0 %}up{% else %}down{% endif %}">
+                <i class="fas {% if weekly_change_value is not None and weekly_change_value > 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i>
+                <span>{{ weekly_change }} vs previous 7 days</span>
+            </div>
+        </div>
+
+        <!-- High Severity -->
+        <div class="stat-card">
+            <div class="stat-header">
+                <p class="stat-label">High Severity</p>
+                <div class="severity-dot red"></div>
+            </div>
+            <p class="stat-value">{{ high_severity }}</p>
+            <p class="stat-change">
+                {% if total_incidents > 0 %}
+                    {% widthratio high_severity total_incidents 100 %}% of total
+                {% else %}
+                    0% of total
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Avg Response -->
+        <div class="stat-card">
+            <div class="stat-header">
+                <p class="stat-label">Avg Response Time</p>
+                <i class="fas fa-clock" style="color: #3b82f6;"></i>
+            </div>
+            <p class="stat-value">{{ avg_response_time }}</p>
+            <div class="stat-trend up">
+                <i class="fas fa-arrow-up"></i>
+                <span>System monitored</span>
+            </div>
+        </div>
+
+        <!-- Resolution Rate -->
+        <div class="stat-card">
+            <div class="stat-header">
+                <p class="stat-label">Resolution Rate</p>
+                <div class="severity-dot green"></div>
+            </div>
+            <p class="stat-value">{{ resolution_rate }}%</p>
+            <p class="stat-change">Incidents resolved by operators</p>
+        </div>
+
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+
+        <div class="card">
+            <h2>Daily Incidents</h2>
+            <canvas id="dailyChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Severity Distribution</h2>
+            <canvas id="severityChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Hourly Distribution</h2>
+            <canvas id="hourlyChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Incidents by Camera</h2>
+            <canvas id="cameraChart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- Insights -->
+    <div class="insights-grid">
+
+        <div class="insight-card red">
+            <h3>Peak Hour Alert</h3>
+            <p class="insight-value">{{ peak_hours }}</p>
+            <p class="insight-desc">Hour with the most incidents</p>
+        </div>
+
+        <div class="insight-card yellow">
+            <h3>Top Location</h3>
+            <p class="insight-value">{{ top_camera }}</p>
+            <p class="insight-desc">Most active surveillance source</p>
+        </div>
+
+        <div class="insight-card green">
+            <h3>Weekly Change</h3>
+            <p class="insight-value">{{ weekly_change }}</p>
+            <p class="insight-desc">Incidents in the last 7 days vs the 7 days before</p>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const dailyIncidents = JSON.parse('{{ daily_incidents|safe|escapejs }}');
+    const severityDistribution = JSON.parse('{{ severity_distribution|safe|escapejs }}');
+    const hourlyDistribution = JSON.parse('{{ hourly_distribution|safe|escapejs }}');
+    const cameraLabels = JSON.parse('{{ camera_labels|safe|escapejs }}');
+    const cameraCounts = JSON.parse('{{ camera_counts|safe|escapejs }}');
+</script>
+
+<script>
+     document.addEventListener("DOMContentLoaded", function () {
+
+    // Daily Incidents Chart
+    new Chart(document.getElementById("dailyChart"), {
+        type: "bar",
+        data: {
+            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            datasets: [{
+                label: "Incidents",
+                data: dailyIncidents,
+                backgroundColor: "#ef4444"
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+
+    // Severity Distribution Chart
+    new Chart(document.getElementById("severityChart"), {
+        type: "pie",
+        data: {
+            labels: ["High", "Medium", "Low"],
+            datasets: [{
+                data: severityDistribution,
+                backgroundColor: ["#ef4444", "#facc15", "#3b82f6"]
+            }]
+        }
+    });
+
+    // Hourly Distribution Chart
+    new Chart(document.getElementById("hourlyChart"), {
+        type: "line",
+        data: {
+            labels: [...Array(24).keys()].map(h => h + ":00"),
+            datasets: [{
+                label: "Incidents",
+                data: hourlyDistribution,
+                borderColor: "#ef4444",
+                fill: false
+            }]
+        }
+    });
+
+    // Camera Incidents Chart
+    new Chart(document.getElementById("cameraChart"), {
+        type: "bar",
+        data: {
+            labels: cameraLabels,
+            datasets: [{
+                label: "Incidents",
+                data: cameraCounts,
+                backgroundColor: "#ef4444"
+            }]
+        },
+        options: {
+            indexAxis: "y"
+        }
+    });
+
+});
+</script>
+
+
+{% endblock %}

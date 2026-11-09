@@ -1,0 +1,43 @@
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>Violence Detection</h1>
+        <p>Monitoring System</p>
+    </div>
+
+    <nav class="sidebar-nav">
+
+        <a href="{% url 'dashboard:index' %}" 
+           class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+
+        <a href="{% url 'live_monitoring:index' %}" 
+           class="nav-item {% if request.resolver_match.app_name == 'live_monitoring' %}active{% endif %}">
+            <i class="fas fa-video"></i> Live Monitoring
+        </a>
+
+        {% if request.session.role == 'admin' or request.session.role == 'operator' %}
+        <a href="{% url 'incidents:index' %}" 
+           class="nav-item {% if request.resolver_match.app_name == 'incidents' %}active{% endif %}">
+            <i class="fas fa-exclamation-triangle"></i> Incidents
+        </a>
+        {% endif %}
+
+        {% if request.session.role == 'admin' %}
+        <a href="{% url 'reports:index' %}" 
+           class="nav-item {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
+            <i class="fas fa-chart-bar"></i> Reports
+        </a>
+
+        <a href="{% url 'users:index' %}" 
+           class="nav-item {% if request.resolver_match.app_name == 'users' %}active{% endif %}">
+            <i class="fas fa-users"></i> Users
+        </a>
+        {% endif %}
+
+        <a href="{% url 'core:logout' %}" class="nav-item logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+
+    </nav>
+</aside>

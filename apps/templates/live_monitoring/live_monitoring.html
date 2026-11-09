@@ -1,0 +1,108 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Live Monitoring{% endblock %}
+
+{% block content %}
+<div id="live-monitoring-page" class="content-page active">
+
+    <div class="page-header">
+        <div>
+            <h1>Live Monitoring</h1>
+            <p>Real-time surveillance feed from the active camera</p>
+        </div>
+    </div>
+
+    <div class="card controls-bar">
+        <div class="controls-left">
+
+            <div class="control-item">
+                <span class="pulse-green"></span>
+                <span>{{ active_cameras_count }} Camera{{ active_cameras_count|pluralize }} Active</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="control-item">
+                <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                <span>{{ active_alerts_count }} Active Alert{{ active_alerts_count|pluralize }}</span>
+            </div>
+
+        </div>
+
+        <div class="controls-right">
+            <select class="control-select" id="camera-filter">
+                <option value="all">All</option>
+                <option value="alert">Alert Only</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="live-cameras-grid" class="live-cameras-grid">
+
+        {% if camera %}
+
+        <div class="live-camera-card alert" data-camera-id="{{ camera.camera_id }}">
+
+            <div class="camera-video">
+
+                <div class="feed-placeholder">
+
+                    <img
+                        src="/static/live_frames/cam1.jpg"
+                        class="live-feed-img"
+                        id="live-feed"
+                    >
+
+                    <div class="live-indicator">
+                        <span class="pulse"></span>
+                        <span>LIVE</span>
+                    </div>
+
+                </div>
+
+                <div class="camera-status live">LIVE</div>
+
+            </div>
+
+            <div class="camera-info">
+                <h3>{{ camera.location }}</h3>
+                <p>{{ camera.model }}</p>
+            </div>
+
+        </div>
+
+        {% else %}
+
+        <div class="live-camera-card">
+            <div class="camera-video">
+
+                <div class="feed-placeholder">
+                    <i class="fas fa-camera-slash"></i>
+                    <p>No Camera Found</p>
+                </div>
+
+                <div class="camera-status">OFFLINE</div>
+
+            </div>
+
+            <div class="camera-info">
+                <h3>No Camera Available</h3>
+                <p>Please add a camera record in the database</p>
+            </div>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+    setInterval(function () {
+        const img = document.getElementById("live-feed");
+        if (img) {
+            img.src = "/static/live_frames/cam1.jpg?t=" + new Date().getTime();
+        }
+    }, 400);
+</script>
+{% endblock %}

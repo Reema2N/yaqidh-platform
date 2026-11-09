@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Yaqidh</title>
+
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="{% static 'js/script.js' %}"></script>
+
+</head>
+
+<body>
+
+<div id="login-page" class="page active">
+    <div class="login-container">
+
+        <div class="login-header">
+
+        <div class="logo-circle" style="background:none; width:auto; height:auto;">
+            <img src="{% static 'images/yaqidh-logo.png' %}"
+            alt="Yaqidh Logo"
+            style="width:120px; height:120px; object-fit:contain;">
+            </div>
+            <h1>Violence Detection System</h1>
+            <h4>Yaqidh</h4>
+
+        </div>
+
+        <div class="login-form-container">
+
+            <h2>Login</h2>
+
+            <form id="login-form" method="post">
+                {% csrf_token %}
+
+                {% if error %}
+                <div class="error-message" style="color:#ff4d4f; margin-bottom:15px; text-align:center;">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="username">Username or Email</label>
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter your username or email"
+                        value="{{ request.POST.username|default:'' }}"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+
+                    <div class="password-input">
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            required
+                        >
+
+                        <button type="button" class="toggle-password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-full">
+                    Login
+                </button>
+
+                <div class="forgot-password">
+                    <a href="#">Forgot Password?</a>
+                </div>
+
+            </form>
+
+        </div>
+
+        <p class="login-footer">
+            Secure Access Only • Authorized Personnel
+        </p>
+
+    </div>
+</div>
+
+</body>
+</html>
