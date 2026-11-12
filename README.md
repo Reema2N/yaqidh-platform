@@ -60,8 +60,7 @@ Permissions are enforced on the server for every page and action, not only hidde
 The platform and the AI pipeline are **decoupled**. They share a MySQL database and a frames folder, so each side can run, crash or restart without taking the other down.
 
 ```
-Camera (RTSP) ──► Detection pipeline (teammates)
-                   pose estimation → LSTM classifier → YOLOv8 weapon check
+Camera (RTSP) ──► Detection pipeline (built by teammates)
                         │                                   │
               writes incidents                  writes latest processed frame
                         ▼                                   ▼
@@ -79,23 +78,9 @@ The pipeline inserts rows into `violence_events` (`Camera_ID`, `Timestamp`, `loc
 
 ## Database
 
-The schema was designed by the team's database members. The detection pipeline creates it on startup, and the platform reads and extends it.
+The platform reads from a shared MySQL database whose schema was designed by the team's database members. On the platform side I added the incident-workflow columns: `status` (Active / Under Review / Resolved) and `response_time` on incidents, and `status` on cameras.
 
-```
-users  1 ──── *  cameras  1 ──── *  violence_events
-       (user_id FK)          (Camera_ID)
-```
-
-| Table | Columns | Notes |
-|---|---|---|
-| `users` | `user_id` (PK), `email` (unique), `password`, `full_name`, `phone`, `role`, `status`, `last_login`, `created`, `must_change_password`, `phone_verified`, `verification_code` | Platform accounts and roles |
-| `cameras` | `camera_id` (PK), `model`, `location`, `stream_url`, `timezone`, `user_id` (FK → `users`), `status` | One user owns many cameras |
-| `violence_events` | `ID` (PK), `Camera_ID`, `Timestamp`, `location`, `Severity`, `Confidence`, `evidence`, `status`, `response_time` | Written by the pipeline for every detection |
-| `django_session` | `session_key` (PK), `session_data`, `expire_date` | Login sessions |
-
-On the platform side I added the incident-workflow columns: `status` (Active / Under Review / Resolved) and `response_time` on `violence_events`, and `status` on `cameras`.
-
-When you run the project without the team's database, `python manage.py migrate` builds these tables from the Django models. That copy is simplified: the `cameras → users` foreign key is not enforced there.
+When you run the project without the team's database, `python manage.py migrate` creates the tables the platform needs from the Django models.
 
 ---
 
@@ -110,8 +95,8 @@ Python · Django 4.2 · MySQL (PyMySQL) · HTML/CSS/JavaScript · Chart.js · Fo
 ### Quick demo (SQLite, no MySQL needed)
 
 ```bash
-git clone https://github.com/Reema2N/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/Reema2N/yaqidh-platform.git
+cd yaqidh-platform
 
 python -m venv venv
 venv\Scripts\activate          # Windows
@@ -187,4 +172,4 @@ docs/                  README screenshots and the demo camera frame
 
 ---
 
-Built by [Reema](https://github.com/Reema2N) · [LinkedIn](https://www.linkedin.com/in/reema-nassr-00275b2a9) · [Portfolio](https://reema-nasser.vercel.app)
+Built by [Reema](https://github.com/Reema2N) · [LinkedIn](https://www.linkedin.com/in/reema-nassr) · [Portfolio](https://reema-nasser.vercel.app)
