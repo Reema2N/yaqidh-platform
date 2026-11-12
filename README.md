@@ -78,7 +78,7 @@ The pipeline inserts rows into `violence_events` (`Camera_ID`, `Timestamp`, `loc
 
 ## Database
 
-The platform reads from a shared MySQL database whose schema was designed by the team's database members. On the platform side I added the incident-workflow columns: `status` (Active / Under Review / Resolved) and `response_time` on incidents, and `status` on cameras.
+The platform reads from a shared MySQL database whose schema was designed by the team's database members.
 
 When you run the project without the team's database, `python manage.py migrate` creates the tables the platform needs from the Django models.
 
