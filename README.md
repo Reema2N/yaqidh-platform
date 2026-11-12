@@ -4,7 +4,7 @@ Yaqidh is a real-time violence detection system for surveillance cameras, built 
 
 A deep-learning pipeline watches camera streams and records violent events. **This repository is the web platform** that security staff use to monitor cameras, review incidents and manage access.
 
-> **My role:** I built this platform end to end (Django backend + frontend) and integrated it with the team's detection pipeline. Other team members built the detection model, the alerting service and the database design. Those parts are not included in this repo.
+> **My role:** I built this platform end to end (Django backend + frontend) and integrated it with the team's detection pipeline. Other team members fine-tuned a pre-trained model for detection and built the alerting service and the database design. Those parts are not included in this repo.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
